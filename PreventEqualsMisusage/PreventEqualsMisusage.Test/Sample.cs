@@ -48,6 +48,38 @@ namespace Samples
 
             var r = a.Equals(b);
         }
+
+        public void GroupBy()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.GroupBy(x => x);
+        }
+
+        public void Contains()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.Contains(new Foo());
+        }
+
+        public void ContainsWithEqualityComparer()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.Contains(new Foo(), new FakeEqualityComparer<Foo>());
+        }
+
+        public void ContainsAsMethodGroup()
+        {
+            IEnumerable<string> a = null;
+            IEnumerable<string> b = null;
+
+            a.All(b.Contains);
+        }
     }
 
     public class Sample<T>

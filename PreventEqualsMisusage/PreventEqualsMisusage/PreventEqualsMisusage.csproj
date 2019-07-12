@@ -8,7 +8,6 @@
 
   <PropertyGroup>
     <PackageId>PreventEqualsMisusage</PackageId>
-    <PackageVersion>1.0.0.0</PackageVersion>
     <Authors>Urs Enzler</Authors>
     <PackageLicenseUrl></PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/ursenzler/PreventEqualsMisusageAnalyzer</PackageProjectUrl>
@@ -16,13 +15,28 @@
     <RepositoryUrl>https://github.com/ursenzler/PreventEqualsMisusageAnalyzer</RepositoryUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>Prevents surprises by wrong Equals usage by:
-- finding Union, Distinct, Except, Intersect without EqualityComparer.
+- finding Union, Contains, GroupBy, Distinct, Except, Intersect without EqualityComparer.
 - finding Equals on types that do not implement IEquatable.</Description>
-    <PackageReleaseNotes>Initial version</PackageReleaseNotes>
+    <PackageReleaseNotes>1.5
+- finds Contains in method groups
+
+1.4
+- trial build
+
+1.3.1, 1.3.2
+- bug fix regarding HasSet
+
+1.3.0
+- ignores now Contains on string and HashSet
+
+1.2.0
+- added Contains and GroupBy</PackageReleaseNotes>
     <Copyright>Copyright 2019 by Urs Enzler</Copyright>
     <PackageTags>Equals, analyzers</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <Version>1.1.0</Version>
+    <Version>1.5</Version>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,6 +53,10 @@
   <ItemGroup>
     <None Update="tools\*.ps1" CopyToOutputDirectory="Always" Pack="true" PackagePath="" />
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

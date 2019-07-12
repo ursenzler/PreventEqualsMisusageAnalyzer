@@ -1,8 +1,10 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
+using PreventEqualsMisusage;
 
 namespace PreventEqualsMisusage.Test
 {
@@ -213,6 +215,257 @@ namespace Samples
 
             VerifyCSharpDiagnostic(test);
         }
+
+        [TestMethod]
+        public void FindsGroupBy()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void GroupBy()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.GroupBy(x => x);
+        }
+    }
+
+    public class Foo
+    {
+    }
+}";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "PreventEqualsMisusage",
+                Message = "Do not use GroupBy without equality comparer",
+                Severity = DiagnosticSeverity.Warning,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 12, 21)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
+        [TestMethod]
+        public void IgnoresGroupByWithEqualityComparer()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void GroupBy()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.GroupBy(x => x, new FakeEqualityComparer<Foo>());
+        }
+    }
+
+    public class Foo
+    {
+    }
+
+    public class FakeEqualityComparer<T> : IEqualityComparer<T>
+    {
+        public bool Equals(T x, T y)
+        {
+            return true;
+        }
+
+        public int GetHashCode(T obj)
+        {
+            return 0;
+        }
+    }
+}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void FindsContains()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void Contains()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.Contains(new Foo());
+        }
+    }
+
+    public class Foo
+    {
+    }
+}";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "PreventEqualsMisusage",
+                Message = "Do not use Contains without equality comparer",
+                Severity = DiagnosticSeverity.Warning,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 12, 21)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
+        [TestMethod]
+        public void FindsContainsAsMethodGroup()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void ContainsAsMethodGroup()
+        {
+            IEnumerable<string> a = null;
+            IEnumerable<string> b = null;
+
+            a.All(b.Contains);
+        }
+    }
+
+    public class Foo
+    {
+    }
+}";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "PreventEqualsMisusage",
+                Message = "Do not use Contains without equality comparer",
+                Severity = DiagnosticSeverity.Warning,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 15, 19)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
+        [TestMethod]
+        public void IgnoresContainsWithEqualityComparer()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void ContainsWithEqualityComparer()
+        {
+            var r = new[]
+            {
+                new Foo()
+            }.Contains(new Foo(), new FakeEqualityComparer<Foo>());
+        }
+    }
+
+    public class Foo
+    {
+    }
+
+    public class FakeEqualityComparer<T> : IEqualityComparer<T>
+    {
+        public bool Equals(T x, T y)
+        {
+            return true;
+        }
+
+        public int GetHashCode(T obj)
+        {
+            return 0;
+        }
+    }
+}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
+        public void IgnoresContainsOnString()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void ContainsOnString()
+        {
+            string.Empty.Contains(string.Empty);
+        }
+    }
+}";
+
+            VerifyCSharpDiagnostic(test);
+        }
+
+        // won't run :-(
+        //        [TestMethod]
+        //        public void IgnoresContainsOnHashSet()
+        //        {
+        //            var test = @"
+        //using System;
+        //using System.Collections.Generic;
+        //using System.Linq;
+
+        //namespace Samples
+        //{
+        //    public class Sample
+        //    {
+        //        public void ContainsOnHashSet()
+        //        {
+        //            var hs = new HashSet<string>();
+
+        //            hs.Contains(string.Empty);
+        //        }
+        //    }
+        //}";
+
+        //            VerifyCSharpDiagnostic(test);
+        //        }
 
         [TestMethod]
         public void FindsEquals()

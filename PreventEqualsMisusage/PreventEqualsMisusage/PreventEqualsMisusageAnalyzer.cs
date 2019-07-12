@@ -51,9 +51,56 @@ namespace PreventEqualsMisusage
 
                 if (access.Parent is InvocationExpressionSyntax p)
                 {
-                    if (p.ArgumentList.ChildNodes().Count() == forbiddenArgumentCount)
+                    if (p.ArgumentList.ChildNodes().Count() <= forbiddenArgumentCount)
                     {
                         var diagnostic = Diagnostic.Create(Rule, access.GetLocation(), $"{identifierText} without equality comparer");
+
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                }
+            }
+
+            if (identifierText == "Contains")
+            {
+                var symbol = context.SemanticModel.GetSymbolInfo(access).Symbol ?? context.SemanticModel.GetDeclaredSymbol(access);
+
+                if (symbol is IMethodSymbol method)
+                {
+                    var constructedFrom = method.ConstructedFrom.ContainingType.Name;
+                    if (constructedFrom != "String"
+                        && constructedFrom != "HashSet")
+                    {
+                        if (access.Parent is InvocationExpressionSyntax p)
+                        {
+                            if (p.ArgumentList.ChildNodes().Count() <= 1)
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, p.GetLocation(),
+                                    "Contains without equality comparer");
+
+                                context.ReportDiagnostic(diagnostic);
+                            }
+                        }
+
+                        if (access.Parent is ArgumentSyntax a)
+                        {
+                            var diagnostic = Diagnostic.Create(Rule, a.GetLocation(),
+                                "Contains without equality comparer");
+
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                    }
+                }
+            }
+
+            if (identifierText == "GroupBy")
+            {
+                if (access.Parent is InvocationExpressionSyntax p)
+                {
+                    var symbol = (IMethodSymbol)context.SemanticModel.GetSymbolInfo(p).Symbol;
+
+                    if (symbol.ConstructedFrom.Parameters.Last().Type.Name != "IEqualityComparer")
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, access.GetLocation(), "GroupBy without equality comparer");
 
                         context.ReportDiagnostic(diagnostic);
                     }
