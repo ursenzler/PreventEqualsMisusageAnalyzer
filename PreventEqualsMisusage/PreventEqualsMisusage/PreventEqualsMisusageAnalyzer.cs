@@ -30,7 +30,7 @@ namespace PreventEqualsMisusage
                 { "Intersect", 1 }
             };
 
-        private static DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: Description);
+        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: Description);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule); } }
 
@@ -59,65 +59,81 @@ namespace PreventEqualsMisusage
                     }
                 }
             }
-
-            if (identifierText == "Contains")
+            else
             {
-                var symbol = context.SemanticModel.GetSymbolInfo(access).Symbol ?? context.SemanticModel.GetDeclaredSymbol(access);
-
-                if (symbol is IMethodSymbol method)
+                switch (identifierText)
                 {
-                    var constructedFrom = method.ConstructedFrom.ContainingType.Name;
-                    if (constructedFrom != "String"
-                        && constructedFrom != "HashSet")
+                    case "Contains":
+                    {
+                        var symbol = context.SemanticModel.GetSymbolInfo(access).Symbol ??
+                                     context.SemanticModel.GetDeclaredSymbol(access);
+
+                        if (symbol is IMethodSymbol method)
+                        {
+                            var constructedFrom = method.ConstructedFrom.ContainingType.Name;
+                            if (constructedFrom != "String"
+                                && constructedFrom != "HashSet")
+                            {
+                                if (access.Parent is InvocationExpressionSyntax p)
+                                {
+                                    if (p.ArgumentList.ChildNodes().Count() <= 1)
+                                    {
+                                        var diagnostic = Diagnostic.Create(Rule, p.GetLocation(),
+                                            "Contains without equality comparer");
+
+                                        context.ReportDiagnostic(diagnostic);
+                                    }
+                                }
+
+                                if (access.Parent is ArgumentSyntax a)
+                                {
+                                    var diagnostic = Diagnostic.Create(Rule, a.GetLocation(),
+                                        "Contains without equality comparer");
+
+                                    context.ReportDiagnostic(diagnostic);
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case "GroupBy":
                     {
                         if (access.Parent is InvocationExpressionSyntax p)
                         {
-                            if (p.ArgumentList.ChildNodes().Count() <= 1)
+                            var symbol = (IMethodSymbol)context.SemanticModel.GetSymbolInfo(p).Symbol;
+
+                            if (symbol.ConstructedFrom.Parameters.Last().Type.Name != "IEqualityComparer")
                             {
-                                var diagnostic = Diagnostic.Create(Rule, p.GetLocation(),
-                                    "Contains without equality comparer");
+                                var diagnostic = Diagnostic.Create(Rule, access.GetLocation(),
+                                    "GroupBy without equality comparer");
 
                                 context.ReportDiagnostic(diagnostic);
                             }
                         }
 
-                        if (access.Parent is ArgumentSyntax a)
+                        break;
+                    }
+
+                    case "Equals":
+                    {
+                        var symbol = context.SemanticModel.GetSymbolInfo(access).Symbol ??
+                                     context.SemanticModel.GetDeclaredSymbol(access);
+
+                        if (symbol is IMethodSymbol method)
                         {
-                            var diagnostic = Diagnostic.Create(Rule, a.GetLocation(),
-                                "Contains without equality comparer");
+                            if (method.ConstructedFrom.ContainingType.Name == "Object"
+                                || method.ConstructedFrom.ContainingType.Name == "ValueType")
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, access.GetLocation(),
+                                    "Equals on types not implementing IEquatable");
 
-                            context.ReportDiagnostic(diagnostic);
+                                context.ReportDiagnostic(diagnostic);
+                            }
                         }
-                    }
-                }
-            }
 
-            if (identifierText == "GroupBy")
-            {
-                if (access.Parent is InvocationExpressionSyntax p)
-                {
-                    var symbol = (IMethodSymbol)context.SemanticModel.GetSymbolInfo(p).Symbol;
-
-                    if (symbol.ConstructedFrom.Parameters.Last().Type.Name != "IEqualityComparer")
-                    {
-                        var diagnostic = Diagnostic.Create(Rule, access.GetLocation(), "GroupBy without equality comparer");
-
-                        context.ReportDiagnostic(diagnostic);
-                    }
-                }
-            }
-
-            if (identifierText == "Equals")
-            {
-                var symbol = context.SemanticModel.GetSymbolInfo(access).Symbol ?? context.SemanticModel.GetDeclaredSymbol(access);
-
-                if (symbol is IMethodSymbol method)
-                {
-                    if (method.ConstructedFrom.ContainingType.Name == "Object")
-                    {
-                        var diagnostic = Diagnostic.Create(Rule, access.GetLocation(), "Equals on types not implementing IEquatable");
-
-                        context.ReportDiagnostic(diagnostic);
+                        break;
                     }
                 }
             }

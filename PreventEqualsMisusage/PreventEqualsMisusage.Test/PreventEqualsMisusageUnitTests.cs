@@ -468,7 +468,7 @@ namespace Samples
         //        }
 
         [TestMethod]
-        public void FindsEquals()
+        public void FindsEqualsOnObjects()
         {
             var test = @"
 using System;
@@ -487,6 +487,44 @@ namespace Samples
     }
 
     public class Foo
+    {
+    }
+}";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "PreventEqualsMisusage",
+                Message = "Do not use Equals on types not implementing IEquatable",
+                Severity = DiagnosticSeverity.Warning,
+                Locations =
+                    new[] {
+                        new DiagnosticResultLocation("Test0.cs", 13, 21)
+                    }
+            };
+
+            VerifyCSharpDiagnostic(test, expected);
+        }
+
+        [TestMethod]
+        public void FindsEqualsOnValueTypes()
+        {
+            var test = @"
+using System;
+
+namespace Samples
+{
+    public class Sample
+    {
+        public void EqualsWithoutEquatable()
+        {
+            var a = new Foo();
+            var b = new Foo();
+
+            var r = a.Equals(b);
+        }
+    }
+
+    public struct Foo
     {
     }
 }";

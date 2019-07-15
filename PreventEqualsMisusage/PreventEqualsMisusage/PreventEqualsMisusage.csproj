@@ -17,7 +17,10 @@
     <Description>Prevents surprises by wrong Equals usage by:
 - finding Union, Contains, GroupBy, Distinct, Except, Intersect without EqualityComparer.
 - finding Equals on types that do not implement IEquatable.</Description>
-    <PackageReleaseNotes>1.5
+    <PackageReleaseNotes>1.6
+- finds Equals on ValueTypes
+
+1.5
 - finds Contains in method groups
 
 1.4
@@ -34,7 +37,7 @@
     <Copyright>Copyright 2019 by Urs Enzler</Copyright>
     <PackageTags>Equals, analyzers</PackageTags>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <Version>1.5</Version>
+    <Version>1.6</Version>
     <PackageLicenseExpression></PackageLicenseExpression>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
